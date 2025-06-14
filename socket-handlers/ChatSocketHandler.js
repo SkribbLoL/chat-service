@@ -1,0 +1,154 @@
+const redisClient = require('../RedisSingleton');
+const messageBus = require('../MessageBus');
+const socketSingleton = require('../SocketSingleton');
+
+class ChatSocketHandler {
+  constructor() {
+    this.io = null;
+  }
+
+  initialize() {
+    this.io = socketSingleton.getIO();
+    this.setupSocketEvents();
+  }
+
+  setupSocketEvents() {
+    this.io.on('connection', (socket) => {
+      console.log(`Chat user connected: ${socket.id}`);
+
+      // Join chat room
+      socket.on('join-chat-room', async (data) => {
+        await this.handleJoinChatRoom(socket, data);
+      });
+
+      // Handle chat messages
+      socket.on('chat-message', async (data) => {
+        await this.handleChatMessage(socket, data);
+      });
+
+      // Handle leaving chat room
+      socket.on('leave-chat-room', async () => {
+        await this.handleLeaveChatRoom(socket);
+      });
+
+      // Handle disconnect
+      socket.on('disconnect', async () => {
+        await this.handleDisconnect(socket);
+      });
+    });
+  }
+
+  async handleJoinChatRoom(socket, data) {
+    try {
+      const { roomCode, userId, username } = data;
+      
+      if (!roomCode || !userId) {
+        return socket.emit('error', { message: 'Room code and user ID required' });
+      }
+
+      // Store socket information
+      socket.roomCode = roomCode;
+      socket.userId = userId;
+      socket.username = username;
+      socket.join(roomCode);
+
+      // Store user in Redis
+      await redisClient.addUserToRoom(roomCode, userId, {
+        username,
+        socketId: socket.id,
+        joinedAt: Date.now()
+      });
+
+      // Get and send chat history
+      const messages = await redisClient.getChatHistory(roomCode);
+      socket.emit('chat-history', { messages });
+
+      // Notify other users
+      socket.to(roomCode).emit('user-joined-chat', { userId, username });
+
+      console.log(`${username} joined chat room ${roomCode}`);
+    } catch (error) {
+      console.error('Error handling join chat room:', error);
+      socket.emit('error', { message: 'Failed to join chat room' });
+    }
+  }
+
+  async handleChatMessage(socket, data) {
+    try {
+      const { message } = data;
+      const { roomCode, userId, username } = socket;
+
+      if (!roomCode || !message) {
+        return;
+      }
+
+      // Check if this is during a game (ask game service)
+      const gameCheckResponse = await messageBus.askGameService('check-guess', {
+        roomCode,
+        userId,
+        guess: message.trim()
+      });
+
+      const chatMessage = {
+        id: `${Date.now()}-${userId}`,
+        userId,
+        username,
+        message,
+        timestamp: Date.now(),
+        type: gameCheckResponse.isGameActive ? 'guess' : 'message'
+      };
+
+      if (gameCheckResponse.isCorrect) {
+        // Don't broadcast the correct guess as a chat message
+        // Game service will handle the correct guess notification
+        return;
+      }
+
+      // Store message in Redis
+      await redisClient.storeChatMessage(roomCode, chatMessage);
+
+      // Broadcast to all users in room
+      this.io.to(roomCode).emit('chat-message', chatMessage);
+    } catch (error) {
+      console.error('Error handling chat message:', error);
+    }
+  }
+
+  async handleLeaveChatRoom(socket) {
+    try {
+      const { roomCode, userId, username } = socket;
+      if (!roomCode) return;
+
+      await redisClient.removeUserFromRoom(roomCode, userId);
+      socket.to(roomCode).emit('user-left-chat', { userId, username });
+      socket.leave(roomCode);
+
+      console.log(`${username} left chat room ${roomCode}`);
+    } catch (error) {
+      console.error('Error handling leave chat room:', error);
+    }
+  }
+
+  async handleDisconnect(socket) {
+    try {
+      const { roomCode, userId, username } = socket;
+      if (roomCode && userId) {
+        await redisClient.removeUserFromRoom(roomCode, userId);
+        socket.to(roomCode).emit('user-left-chat', { userId, username });
+      }
+      console.log(`Chat user disconnected: ${socket.id}`);
+    } catch (error) {
+      console.error('Error handling disconnect:', error);
+    }
+  }
+
+  /**
+   * Get the Socket.IO instance
+   * @returns {Object} Socket.IO instance
+   */
+  getIO() {
+    return this.io;
+  }
+}
+
+module.exports = new ChatSocketHandler(); 

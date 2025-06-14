@@ -1,0 +1,26 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: chat-service-ingress
+  namespace: default
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: PathPrefix(`/chat`)
+      kind: Rule
+      services:
+        - name: chat-service
+          port: 5002
+      middlewares:
+        - name: chat-strip-prefix
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: chat-strip-prefix
+  namespace: default
+spec:
+  stripPrefix:
+    prefixes:
+      - /chat 

@@ -1,17 +1,23 @@
 {
   "name": "chat-service",
   "version": "1.0.0",
-  "description": "",
-  "license": "ISC",
-  "author": "",
-  "type": "commonjs",
+  "description": "Chat service for SkribbLoL game",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon --watch . --exec node index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "dependencies": {
+    "express": "^4.18.2",
     "cors": "^2.8.5",
-    "nodemon": "^3.1.9"
-  }
+    "socket.io": "^4.7.2",
+    "redis": "^4.6.7",
+    "amqplib": "^0.10.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": ["chat", "websocket", "redis"],
+  "author": "",
+  "license": "ISC"
 }
