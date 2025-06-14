@@ -1,4 +1,4 @@
-const redis = require('redis');
+const Redis = require('ioredis');
 let instance = null;
 
 class RedisChatClient {
@@ -7,9 +7,9 @@ class RedisChatClient {
       return instance;
     }
 
-    this.client = redis.createClient({
+    this.client = new Redis({
       host: process.env.REDIS_HOST || 'localhost',
-      port: process.env.REDIS_PORT || 6379,
+      port: Number(process.env.REDIS_PORT) || 6379,
       password: process.env.REDIS_PASSWORD || undefined,
     });
 
@@ -21,44 +21,40 @@ class RedisChatClient {
   }
 
   async connect() {
-    if (!this.client.isOpen) {
-      await this.client.connect();
-    }
+    // ioredis connects automatically, no need for explicit connect
     return this.client;
   }
 
   async disconnect() {
-    if (this.client.isOpen) {
-      await this.client.disconnect();
-    }
+    await this.client.quit();
   }
 
   // Chat-specific Redis operations
   async storeChatMessage(roomCode, message) {
     const key = `chat:room:${roomCode}:messages`;
-    await this.client.lPush(key, JSON.stringify(message));
-    await this.client.lTrim(key, 0, 99); // Keep last 100 messages
+    await this.client.lpush(key, JSON.stringify(message));
+    await this.client.ltrim(key, 0, 99); // Keep last 100 messages
   }
 
   async getChatHistory(roomCode) {
     const key = `chat:room:${roomCode}:messages`;
-    const chatHistory = await this.client.lRange(key, 0, -1);
+    const chatHistory = await this.client.lrange(key, 0, -1);
     return chatHistory.map(msg => JSON.parse(msg)).reverse();
   }
 
   async addUserToRoom(roomCode, userId, userData) {
     const key = `chat:room:${roomCode}:users`;
-    await this.client.hSet(key, userId, JSON.stringify(userData));
+    await this.client.hset(key, userId, JSON.stringify(userData));
   }
 
   async removeUserFromRoom(roomCode, userId) {
     const key = `chat:room:${roomCode}:users`;
-    await this.client.hDel(key, userId);
+    await this.client.hdel(key, userId);
   }
 
   async getRoomUsers(roomCode) {
     const key = `chat:room:${roomCode}:users`;
-    const users = await this.client.hGetAll(key);
+    const users = await this.client.hgetall(key);
     const parsedUsers = {};
     for (const [userId, userData] of Object.entries(users)) {
       parsedUsers[userId] = JSON.parse(userData);
