@@ -8,11 +8,16 @@ class RedisChatClient {
     }
 
     this.client = new Redis({
-      host: process.env.REDIS_HOST || 'redis',
+      // Kubernetes/Helm configuration
+      host: process.env.REDIS_HOST || 'redis-master.default.svc.cluster.local',
       port: process.env.REDIS_PORT || 6379,
-      // host: process.env.REDIS_HOST || 'localhost',
-      // port: Number(process.env.REDIS_PORT) || 6379,
-      // password: process.env.REDIS_PASSWORD || undefined,
+      password: process.env.REDIS_PASSWORD,
+      
+      // Docker Compose configuration (commented out)
+      // Uncomment below and comment above for Docker Compose usage
+      // host: process.env.REDIS_HOST || 'redis',
+      // port: process.env.REDIS_PORT || 6379,
+      // password: undefined, // No password for Docker Compose Redis
     });
 
     // Handle connection events
