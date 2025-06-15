@@ -29,7 +29,7 @@ class ChatSocketSingleton {
         origin: '*', // In production, restrict this to your frontend URL
         methods: ['GET', 'POST'],
       },
-      path: '/socket.io/',
+      path: '/chat/socket.io/',
       allowEIO3: true,
     });
 
