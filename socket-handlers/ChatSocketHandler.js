@@ -14,7 +14,8 @@ class ChatSocketHandler {
 
   setupSocketEvents() {
     this.io.on('connection', (socket) => {
-      console.log(`Chat user connected: ${socket.id}`);
+      console.log(`🎯 Chat user connected: ${socket.id}`);
+      console.log(`🔍 Chat socket handshake:`, socket.handshake);
 
       // Join chat room
       socket.on('join-chat-room', async (data) => {
@@ -32,9 +33,20 @@ class ChatSocketHandler {
       });
 
       // Handle disconnect
-      socket.on('disconnect', async () => {
+      socket.on('disconnect', async (reason) => {
+        console.log(`🔌 Chat user disconnected: ${socket.id}, reason: ${reason}`);
         await this.handleDisconnect(socket);
       });
+
+      // Handle connection errors
+      socket.on('error', (error) => {
+        console.error(`💥 Chat socket error for ${socket.id}:`, error);
+      });
+    });
+
+    // Handle Socket.IO server errors
+    this.io.on('error', (error) => {
+      console.error('💥 Chat Socket.IO server error:', error);
     });
   }
 
