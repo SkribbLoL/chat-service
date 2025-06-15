@@ -25,15 +25,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Health check endpoint with prefix
-app.get('/chat/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'ok',
-    service: 'chat-service',
-    timestamp: new Date().toISOString()
-  });
-});
-
 // Initialize all services
 async function initializeServices() {
   try {
