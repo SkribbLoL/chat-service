@@ -28,12 +28,30 @@ class ChatSocketSingleton {
       cors: {
         origin: '*', // In production, restrict this to your frontend URL
         methods: ['GET', 'POST'],
+        credentials: true,
       },
-      path: '/socket.io/',
+      path: '/socket.io/', // Keep default path
       allowEIO3: true,
+      transports: ['websocket', 'polling'], // Allow both transports
+      pingTimeout: 60000,
+      pingInterval: 25000,
     });
 
     console.log('Chat Socket.io initialized');
+    
+    // Add connection logging
+    this.io.on('connection', (socket) => {
+      console.log(`🔌 New chat socket connected: ${socket.id}`);
+      
+      socket.on('disconnect', (reason) => {
+        console.log(`❌ Chat socket disconnected: ${socket.id}, reason: ${reason}`);
+      });
+      
+      socket.on('error', (error) => {
+        console.error(`🔥 Chat socket error: ${socket.id}`, error);
+      });
+    });
+    
     return this.io;
   }
 
@@ -73,4 +91,4 @@ class ChatSocketSingleton {
   }
 }
 
-module.exports = new ChatSocketSingleton(); 
+module.exports = new ChatSocketSingleton();
