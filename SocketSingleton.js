@@ -32,29 +32,33 @@ class ChatSocketSingleton {
         origin: "*", // Configure appropriately for production
         methods: ["GET", "POST"]
       },
-      // Configure path for ingress routing
-      path: '/socket.io/',
+      // Configure path for ingress routing - this is the key fix!
+      path: '/chat/socket.io/',
       // Add connection timeout
       pingTimeout: 60000,
       pingInterval: 25000
     });
 
-    this.io = this.io.of("/chat")
+    // Create namespace for chat
+    this.io = this.io.of("/chat");
 
-    console.log('Chat Socket.io initialized');
+    console.log('Chat Socket.io initialized with namespace /chat');
     
-    // // Add connection logging
-    // this.io.on('connection', (socket) => {
-    //   console.log(`🔌 New chat socket connected: ${socket.id}`);
+    // Add connection logging for debugging
+    this.io.on('connection', (socket) => {
+      console.log(`🔌 New chat socket connected: ${socket.id}`);
       
-    //   socket.on('disconnect', (reason) => {
-    //     console.log(`❌ Chat socket disconnected: ${socket.id}, reason: ${reason}`);
-    //   });
+      socket.on('disconnect', (reason) => {
+        console.log(`❌ Chat socket disconnected: ${socket.id}, reason: ${reason}`);
+      });
       
-    //   socket.on('error', (error) => {
-    //     console.error(`🔥 Chat socket error: ${socket.id}`, error);
-    //   });
-    // });
+      socket.on('error', (error) => {
+        console.error(`🔥 Chat socket error: ${socket.id}`, error);
+      });
+
+      // Add a test event for debugging
+      socket.emit('welcome', { message: 'Connected to chat namespace' });
+    });
     
     return this.io;
   }
