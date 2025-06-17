@@ -25,16 +25,8 @@ class ChatSocketSingleton {
     }
 
     this.io = socketIO(server, {
-      cors: {
-        origin: '*', // In production, restrict this to your frontend URL
-        methods: ['GET', 'POST'],
-        credentials: true,
-      },
-      path: '/socket.io/', // Keep default path
-      allowEIO3: true,
-      transports: ['websocket', 'polling'], // Allow both transports
-      pingTimeout: 60000,
-      pingInterval: 25000,
+      upgrade: false,
+      transports: ['websocket']
     });
 
     console.log('Chat Socket.io initialized');
