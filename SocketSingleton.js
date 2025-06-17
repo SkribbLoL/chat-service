@@ -25,8 +25,18 @@ class ChatSocketSingleton {
     }
 
     this.io = socketIO(server, {
-      upgrade: false,
-      transports: ['websocket']
+      // Allow both websocket and polling for better compatibility
+      transports: ['websocket', 'polling'],
+      upgrade: true, // Allow upgrade to websocket
+      cors: {
+        origin: "*", // Configure appropriately for production
+        methods: ["GET", "POST"]
+      },
+      // Configure path for ingress routing
+      path: '/socket.io/',
+      // Add connection timeout
+      pingTimeout: 60000,
+      pingInterval: 25000
     });
 
     this.io = this.io.of("/chat")
