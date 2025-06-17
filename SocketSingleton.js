@@ -27,46 +27,21 @@ class ChatSocketSingleton {
     this.io = socketIO(server, {
       cors: {
         origin: '*', // In production, restrict this to your frontend URL
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        methods: ['GET', 'POST'],
         credentials: true,
-        allowedHeaders: ['Content-Type', 'Authorization'],
       },
       path: '/socket.io/', // Keep default path
       allowEIO3: true,
-      transports: ['polling', 'websocket'], // Polling first for better compatibility
-      allowUpgrades: true,
+      transports: ['websocket', 'polling'], // Allow both transports
       pingTimeout: 60000,
       pingInterval: 25000,
-      maxHttpBufferSize: 1e6,
-      
-      // Additional options for proxy/ingress compatibility
-      cookie: false,
-      serveClient: false,
-      
-      // Enhanced logging for debugging
-      allowRequest: (req, callback) => {
-        console.log('🔍 Incoming Socket.IO request:', {
-          origin: req.headers.origin,
-          userAgent: req.headers['user-agent'],
-          transport: req._query?.transport,
-          path: req.url
-        });
-        callback(null, true);
-      }
     });
 
     console.log('Chat Socket.io initialized');
     
-    // Enhanced connection logging
+    // Add connection logging
     this.io.on('connection', (socket) => {
       console.log(`🔌 New chat socket connected: ${socket.id}`);
-      console.log(`🔍 Transport: ${socket.conn.transport.name}`);
-      console.log(`🔍 Remote address: ${socket.conn.remoteAddress}`);
-      
-      // Log transport upgrades
-      socket.conn.on('upgrade', () => {
-        console.log(`⬆️ Socket ${socket.id} upgraded to: ${socket.conn.transport.name}`);
-      });
       
       socket.on('disconnect', (reason) => {
         console.log(`❌ Chat socket disconnected: ${socket.id}, reason: ${reason}`);
@@ -75,11 +50,6 @@ class ChatSocketSingleton {
       socket.on('error', (error) => {
         console.error(`🔥 Chat socket error: ${socket.id}`, error);
       });
-    });
-
-    // Global error handling
-    this.io.engine.on('connection_error', (error) => {
-      console.error('🔥 Socket.IO engine connection error:', error);
     });
     
     return this.io;
