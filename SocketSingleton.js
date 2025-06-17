@@ -25,22 +25,22 @@ class ChatSocketSingleton {
     }
 
     this.io = socketIO(server, {
-      // Start with polling only to avoid upgrade issues
-      transports: ['polling'],
-      allowUpgrades: false, // Disable upgrades for now
+      // Enable both polling and websocket for better performance
+      transports: ['polling', 'websocket'],
+      allowUpgrades: true, // Allow upgrade to websockets
       cors: {
-        origin: "*", // Configure appropriately for production
-        methods: ["GET", "POST"],
-        credentials: false
+        origin: '*', // Configure appropriately for production
+        methods: ['GET', 'POST'],
+        credentials: false,
       },
-      // Configure path for ingress routing - this is the key fix!
+      // Configure path for ingress routing
       path: '/chat/socket.io/',
-      // Increase timeouts for debugging
-      pingTimeout: 120000,
-      pingInterval: 60000,
+      // Reduce timeouts for better performance
+      pingTimeout: 60000,
+      pingInterval: 25000,
       // Add additional options for proxy compatibility
       allowEIO3: true,
-      maxHttpBufferSize: 1e6
+      maxHttpBufferSize: 1e6,
     });
 
     // Create namespace for chat
