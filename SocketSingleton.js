@@ -29,20 +29,22 @@ class ChatSocketSingleton {
       transports: ['websocket']
     });
 
+    this.io = this.io.of("/chat")
+
     console.log('Chat Socket.io initialized');
     
-    // Add connection logging
-    this.io.on('connection', (socket) => {
-      console.log(`🔌 New chat socket connected: ${socket.id}`);
+    // // Add connection logging
+    // this.io.on('connection', (socket) => {
+    //   console.log(`🔌 New chat socket connected: ${socket.id}`);
       
-      socket.on('disconnect', (reason) => {
-        console.log(`❌ Chat socket disconnected: ${socket.id}, reason: ${reason}`);
-      });
+    //   socket.on('disconnect', (reason) => {
+    //     console.log(`❌ Chat socket disconnected: ${socket.id}, reason: ${reason}`);
+    //   });
       
-      socket.on('error', (error) => {
-        console.error(`🔥 Chat socket error: ${socket.id}`, error);
-      });
-    });
+    //   socket.on('error', (error) => {
+    //     console.error(`🔥 Chat socket error: ${socket.id}`, error);
+    //   });
+    // });
     
     return this.io;
   }
