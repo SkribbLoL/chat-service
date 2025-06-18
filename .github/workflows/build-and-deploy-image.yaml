@@ -58,7 +58,7 @@ on:
 
 env:
   IMG_NAME: veljkoskrbic/skribblol-chat-service
-  GKE_CLUSTER: skribblol-cluster
+  GKE_CLUSTER: skribblol-cluster-gcp
   GKE_ZONE: europe-west4-a
   DEPLOYMENT_NAME: chat-service-deployment
 
