@@ -101,6 +101,27 @@ class ChatSocketHandler {
         guess: message.trim()
       });
 
+      if (gameCheckResponse.isCorrect) {
+        // Immediately broadcast celebration message to all users
+        const celebrationMessage = {
+          id: `correct-${Date.now()}-${userId}`,
+          userId: 'system',
+          username: 'System',
+          message: `🎉 ${username} got it! The word was "${message.trim()}" (+points incoming)`,
+          timestamp: Date.now(),
+          type: 'correct-guess'
+        };
+
+        // Store celebration message in Redis
+        await redisClient.storeChatMessage(roomCode, celebrationMessage);
+
+        // Broadcast celebration to all users immediately
+        this.io.to(roomCode).emit('chat-message', celebrationMessage);
+
+        // Don't send the original guess message
+        return;
+      }
+
       const chatMessage = {
         id: `${Date.now()}-${userId}`,
         userId,
@@ -109,12 +130,6 @@ class ChatSocketHandler {
         timestamp: Date.now(),
         type: gameCheckResponse.isGameActive ? 'guess' : 'message'
       };
-
-      if (gameCheckResponse.isCorrect) {
-        // Don't broadcast the correct guess as a chat message
-        // Game service will handle the correct guess notification
-        return;
-      }
 
       // Store message in Redis
       await redisClient.storeChatMessage(roomCode, chatMessage);

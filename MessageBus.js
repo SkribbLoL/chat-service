@@ -101,7 +101,19 @@ class ChatMessageBus {
           });
           break;
         case 'correct-guess':
-          io.to(roomCode).emit('correct-guess-notification', data);
+          // Send detailed points information as a chat message
+          if (data.message) {
+            const pointsMessage = {
+              id: `points-${Date.now()}-${data.userId}`,
+              userId: 'system',
+              username: 'System',
+              message: data.message,
+              timestamp: Date.now(),
+              type: 'system'
+            };
+            
+            io.to(roomCode).emit('chat-message', pointsMessage);
+          }
           break;
         default:
           console.log(`Unhandled game event type: ${type}`);
