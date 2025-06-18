@@ -115,6 +115,13 @@ class ChatMessageBus {
             io.to(roomCode).emit('chat-message', pointsMessage);
           }
           break;
+        case 'new-round':
+          // Clear chat and send new round notification
+          io.to(roomCode).emit('new-round', {
+            round: data.round,
+            message: 'New round started! Chat cleared.'
+          });
+          break;
         default:
           console.log(`Unhandled game event type: ${type}`);
       }
