@@ -74,6 +74,11 @@ class RedisChatClient {
     return this.client.get(key);
   }
 
+  async getRoomData(roomCode) {
+    // Get room data using the same key pattern as game service
+    return this.client.get(`room:${roomCode}`);
+  }
+
   async set(key, value, options = {}) {
     return this.client.set(key, value, options);
   }

@@ -94,20 +94,35 @@ class ChatSocketHandler {
         return;
       }
 
-      // Check if this is during a game (ask game service)
-      const gameCheckResponse = await messageBus.askGameService('check-guess', {
-        roomCode,
-        userId,
-        guess: message.trim()
-      });
+      // Fast check: Get game state directly from Redis instead of using slow message bus
+      let isGameActive = false;
+      let isCorrect = false;
+      let currentWord = null;
 
-      if (gameCheckResponse.isCorrect) {
+      try {
+        // Get room data directly from Redis (much faster than RabbitMQ)
+        const roomData = await redisClient.getRoomData(roomCode);
+        if (roomData) {
+          const room = JSON.parse(roomData);
+          isGameActive = room.gameStarted && room.gamePhase === 'drawing';
+          
+          if (isGameActive && room.currentDrawer !== userId && room.currentWord) {
+            // Check if guess is correct
+            isCorrect = message.toLowerCase().trim() === room.currentWord.toLowerCase();
+            currentWord = room.currentWord;
+          }
+        }
+      } catch (error) {
+        console.log('Could not check game state, treating as regular message:', error.message);
+      }
+
+      if (isCorrect && currentWord) {
         // Immediately broadcast celebration message to all users
         const celebrationMessage = {
           id: `correct-${Date.now()}-${userId}`,
           userId: 'system',
           username: 'System',
-          message: `🎉 ${username} got it! The word was "${message.trim()}" (+points incoming)`,
+          message: `🎉 ${username} got it! The word was "${currentWord}" (+points incoming)`,
           timestamp: Date.now(),
           type: 'correct-guess'
         };
@@ -117,6 +132,15 @@ class ChatSocketHandler {
 
         // Broadcast celebration to all users immediately
         this.io.to(roomCode).emit('chat-message', celebrationMessage);
+
+        // Notify game service about the correct guess (async, don't wait)
+        if (messageBus) {
+          messageBus.askGameService('check-guess', {
+            roomCode,
+            userId,
+            guess: message.trim()
+          }).catch(err => console.log('Game service notification failed:', err.message));
+        }
 
         // Don't send the original guess message
         return;
@@ -128,7 +152,7 @@ class ChatSocketHandler {
         username,
         message,
         timestamp: Date.now(),
-        type: gameCheckResponse.isGameActive ? 'guess' : 'message'
+        type: isGameActive ? 'guess' : 'message'
       };
 
       // Store message in Redis
