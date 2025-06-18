@@ -122,6 +122,12 @@ class ChatMessageBus {
             message: 'New round started! Chat cleared.'
           });
           break;
+        case 'game-restarted':
+          // Clear chat and send game restarted notification
+          io.to(roomCode).emit('game-restarted', {
+            message: 'Game restarted! Chat cleared.'
+          });
+          break;
         default:
           console.log(`Unhandled game event type: ${type}`);
       }
